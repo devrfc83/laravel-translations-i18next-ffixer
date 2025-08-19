@@ -105,9 +105,9 @@ this issue.
 
 ## Who is the author?
 
-Hi, I'm Rodrigo Fuentealba, a neurodivergent human being who works in data
-science, plays chess, and rides motorcycles. You can find my website
-[here](https://www.chessandrock.com/).
+Hi, I'm Rodrigo Fuentealba Cartes, a Computer Science Engineer with more than 20
+years of experience in the field. You can find my website
+[here](https://www.devrfc83.com/).
 
 ## License
 
