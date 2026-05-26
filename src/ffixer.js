@@ -24,28 +24,87 @@
  *
  * The result of this function can be consumed by i18next.
  *
- * A second parameter was added to enable/disable debug: Performing a regular
- * expression operation as many times as there are translation strings impacts
- * the application's loading time, and printing the start/stop time is just a
- * basic way to measure such impact.
+ * @param {unknown} translations - Tree of translation strings (e.g. window.LARAVEL_TRANSLATIONS).
+ * @param {boolean} [debug=false] - Log start/finish timestamps to the console.
+ * @param {boolean} [clone=true] - Return a new tree instead of mutating the input.
+ * @returns {unknown} Fixed translations, or the input unchanged when it is not an object.
  */
 
-const ffixer = (translations, debug = false) => {
-  if (debug) console.warn('ffixer started at ' + Date.now().toString());
-  if (typeof translations === 'object' && translations !== null) {
-    for (let key in translations) {
-      if (typeof translations[key] === 'object') {
-        ffixer(translations[key]);
-      } else if (typeof translations[key] === 'string') {
-        translations[key] = translations[key].replace(
-          /:(\w+)/g,
-          (match, p1) => `{{ ${p1} }}`
-        );
-      }
+// Matches Laravel placeholders (:attribute, :user-name). Skips ":30" in "10:30".
+const LARAVEL_PLACEHOLDER = /(?<![:\d]):([a-zA-Z_][\w.-]*)/g;
+
+const fixString = (value) =>
+  value.replace(LARAVEL_PLACEHOLDER, (_, name) => `{{ ${name} }}`);
+
+const isTraversable = (value) =>
+  value !== null &&
+  typeof value === 'object' &&
+  (Array.isArray(value) ||
+    Object.prototype.toString.call(value) === '[object Object]');
+
+const processValue = (value, clone) => {
+  if (typeof value === 'string') {
+    return fixString(value);
+  }
+
+  if (!isTraversable(value)) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    if (clone) {
+      return value.map((item) => processValue(item, clone));
     }
-    if (debug) console.warn('ffixer finished ' + Date.now().toString());
+    for (let i = 0; i < value.length; i++) {
+      value[i] = processValue(value[i], clone);
+    }
+    return value;
+  }
+
+  if (clone) {
+    const result = {};
+    for (const key of Object.keys(value)) {
+      result[key] = processValue(value[key], clone);
+    }
+    return result;
+  }
+
+  for (const key of Object.keys(value)) {
+    value[key] = processValue(value[key], clone);
+  }
+  return value;
+};
+
+const ffixer = (translations, debug = false, clone = true) => {
+  if (debug) {
+    console.warn('ffixer started at ' + Date.now().toString());
+  }
+
+  if (translations === null || translations === undefined) {
+    if (debug) {
+      console.warn('ffixer: received null or undefined, returning as-is');
+    }
     return translations;
   }
+
+  if (typeof translations !== 'object') {
+    if (debug) {
+      console.warn(
+        'ffixer: expected object, got ' +
+          typeof translations +
+          ', returning as-is'
+      );
+    }
+    return translations;
+  }
+
+  const result = processValue(translations, clone);
+
+  if (debug) {
+    console.warn('ffixer finished at ' + Date.now().toString());
+  }
+
+  return result;
 };
 
 export default ffixer;

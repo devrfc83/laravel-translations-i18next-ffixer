@@ -1,6 +1,6 @@
 {
   "name": "laravel-translations-i18next-ffixer",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "description": "Fix to make translation strings from vite-plugin-laravel-translations compatible with i18next.",
   "repository": {

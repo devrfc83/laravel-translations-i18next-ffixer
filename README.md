@@ -32,8 +32,12 @@ If a value is found to be an object, the function looks into it recursively, and
 the regular expression is applied only to values that are strings. The resulting
 object can be consumed by i18next.
 
-A second parameter was added to enable/disable debug: Performing a regular
-expression operation as many times as there are translation strings impacts the
+By default the function returns a **new** object and leaves
+**window.LARAVEL_TRANSLATIONS** unchanged. Pass `clone=false` as the third
+argument if you prefer in-place mutation (previous behaviour).
+
+A second parameter enables debug mode: performing a regular expression
+operation as many times as there are translation strings impacts the
 application's loading time, and printing the start/stop time is just a basic
 way to measure such impact.
 
@@ -89,9 +93,16 @@ your configuration, like this:
     ...
 ```
 
-If you want to print when is this function being loaded in the console, you can
-use **ffixer(window.LARAVEL_TRANSLATIONS, debug=true)** instead. This is a very
+If you want to print when this function is being loaded in the console, you can
+use `ffixer(window.LARAVEL_TRANSLATIONS, true)` instead. This is a very
 rudimentary form of debugging, I didn't want to make things more complicated.
+
+To mutate the global in place (as in 0.0.3 and earlier), pass `false` as the
+third argument:
+
+```
+resources: ffixer(window.LARAVEL_TRANSLATIONS, false, false)
+```
 
 ## Why the name?
 
