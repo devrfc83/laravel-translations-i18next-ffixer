@@ -104,6 +104,18 @@ third argument:
 resources: ffixer(window.LARAVEL_TRANSLATIONS, false, false)
 ```
 
+## Testing
+
+After cloning the repository, you can run the test suite from the project root
+with Node.js (no extra test runner is required):
+
+```
+npm test
+```
+
+The tests live under **test/** and cover placeholders, nested structures,
+cloning vs in-place mutation, edge cases, and idempotency.
+
 ## Why the name?
 
 Because it aims to **fix** the issue with the **suffix** parameter in i18next.

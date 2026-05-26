@@ -1,6 +1,6 @@
 {
   "name": "laravel-translations-i18next-ffixer",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "type": "module",
   "description": "Fix to make translation strings from vite-plugin-laravel-translations compatible with i18next.",
   "repository": {
@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/devrfc83/laravel-translations-i18next-ffixer/issues"
   },
-  "homepage": "https://github.com/devrfc83/laravel-translations-i18next-ffixer#readme"
+  "homepage": "https://github.com/devrfc83/laravel-translations-i18next-ffixer#readme",
+  "scripts": {
+    "test": "node --test test/**/*.test.js"
+  }
 }
