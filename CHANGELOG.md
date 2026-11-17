@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [0.1.3] - 2026-11-17
+
+### Documentation
+
+- The README lists the related Vite plugins with their status observed on
+  17 November 2026, and explains why this package is still maintained.
+
 ## [0.1.2] - 2026-11-17
 
 ### Fixed

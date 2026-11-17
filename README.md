@@ -275,6 +275,37 @@ which requires Vite 8 and Node.js 24 or later. This package works with either
 plugin, since both expose the translations through `import.meta.env`. I have
 not reviewed the fork's source beyond its published files.
 
+## Related tools
+
+Status observed on 17 November 2026. These projects change, so check them again
+before you depend on one. None of them is endorsed here, and only
+`@sydgren/vite-plugin-laravel-translations` has been tested with this package.
+
+| Tool | Approach | Vite | Observed status |
+| --- | --- | --- | --- |
+| [`vite-plugin-laravel-translations`](https://github.com/dcodegroup/vite-plugin-laravel-translations) (dcodegroup) | Exposes the translations as `import.meta.env.VITE_LARAVEL_TRANSLATIONS`. This package is designed to work with it. | 6 or earlier (peer dependency) | npm `0.3.1`, published May 2025. Last commit in the repository: May 2025. |
+| [`@sydgren/vite-plugin-laravel-translations`](https://www.npmjs.com/package/@sydgren/vite-plugin-laravel-translations) (sydgren) | Fork of the plugin above, with the same output. | 8 | npm `1.0.2`. Requires Node.js 24 or later. Not an official release of the original project. |
+| [`vite-plugin-laravel-i18next`](https://github.com/adesege/vite-plugin-laravel-i18next) (adesege) | Writes JSON files per language and namespace, and converts `:param` and plurals itself. | 5 or later (peer dependency) | npm `1.0.0`, published October 2024. No commits in the repository since then. |
+| [`@zivex/laravel-vite-translations`](https://github.com/Zivex-Software/laravel-vite-translations) (Zivex Software) | Its own runtime with React, Vue and Svelte adapters. It does not use i18next. | 5 or later (peer dependency) | npm `0.1.5`, last published March 2026. Last commit in the repository: March 2026. |
+
+### Why this project is still active
+
+The tools above cover the same need from different angles, and none of them
+replaces this package for a project that uses i18next with the global object
+from the original plugin:
+
+- The original plugin is the one this package was built for, but it declares a
+  peer dependency on Vite 6 or earlier and has had no commits since May 2025.
+- The Vite 8 fork is published on npm by a single maintainer, first published
+  in June 2026, and requires Node.js 24.
+- The adesege plugin also converts placeholders, but it generates files that
+  must be kept in sync, and it has not been updated since October 2024.
+- The Zivex package replaces i18next's runtime. Moving to it means changing
+  the translation library, not only the conversion step.
+
+This package only converts the strings, in memory, before they reach i18next,
+so it works with either Vite plugin above.
+
 ## Who is the author?
 
 Hi, I'm Rodrigo Fuentealba Cartes, a Computer Science Engineer with more than 20
