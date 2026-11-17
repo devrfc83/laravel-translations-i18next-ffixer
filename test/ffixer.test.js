@@ -345,3 +345,47 @@ describe('ffixer — options object (#6)', () => {
     }
   });
 });
+
+describe('ffixer — only / except / spacing / prefix / suffix (#7)', () => {
+  it('converts only the names listed in "only"', () => {
+    const out = ffixer({ m: ':a and :b' }, { only: ['a'] });
+    assert.equal(out.m, '{{ a }} and :b');
+  });
+
+  it('skips the names listed in "except"', () => {
+    const out = ffixer({ m: ':smile: and :name' }, { except: ['smile'] });
+    assert.equal(out.m, ':smile: and {{ name }}');
+  });
+
+  it('writes compact placeholders with spacing: false', () => {
+    assert.equal(ffixer({ m: 'Hi :name' }, { spacing: false }).m, 'Hi {{name}}');
+  });
+
+  it('uses custom delimiters', () => {
+    assert.equal(
+      ffixer({ m: 'Hi :name' }, { prefix: '%{', suffix: '}' }).m,
+      'Hi %{ name }'
+    );
+  });
+
+  it('applies the options to case variants too', () => {
+    assert.equal(
+      ffixer({ m: ':Name' }, { spacing: false }).m,
+      '{{name, capitalize}}'
+    );
+  });
+
+  it('combines options with clone: false', () => {
+    const input = { m: ':a :b' };
+    ffixer(input, { clone: false, only: ['b'], spacing: false });
+    assert.equal(input.m, ':a {{b}}');
+  });
+
+  it('keeps the default output unchanged', () => {
+    assert.equal(ffixer({ m: 'Hi :name' }, {}).m, 'Hi {{ name }}');
+  });
+});
+
+it('accepts null as the options argument', () => {
+  assert.equal(ffixer({ m: ':a' }, null).m, '{{ a }}');
+});
