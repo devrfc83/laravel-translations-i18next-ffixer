@@ -199,7 +199,7 @@ describe('ffixer — modo debug', () => {
     console.warn = (...args) => warnings.push(args.join(' '));
 
     try {
-      ffixer({ msg: ':a' }, true);
+      ffixer({ msg: ':a' }, { debug: true });
       assert.equal(warnings.length, 2);
       assert.match(warnings[0], /^ffixer started at \d+$/);
       assert.match(warnings[1], /^ffixer finished at \d+$/);
@@ -214,7 +214,7 @@ describe('ffixer — modo debug', () => {
     console.warn = (...args) => warnings.push(args.join(' '));
 
     try {
-      assert.equal(ffixer('not an object', true), 'not an object');
+      assert.equal(ffixer('not an object', { debug: true }), 'not an object');
       assert.ok(
         warnings.some((w) => w.includes('expected object, got string'))
       );
@@ -315,5 +315,33 @@ describe('ffixer — edge cases (#5)', () => {
 
   it('still works on a frozen object with the default clone', () => {
     assert.equal(ffixer(Object.freeze({ a: ':x' })).a, '{{ x }}');
+  });
+});
+
+describe('ffixer — options object (#6)', () => {
+  it('accepts { clone: false } and mutates in place', () => {
+    const input = { msg: 'Hello :name' };
+    const out = ffixer(input, { clone: false });
+    assert.equal(out, input);
+    assert.equal(input.msg, 'Hello {{ name }}');
+  });
+
+  it('defaults to a cloned result with an empty options object', () => {
+    const input = { msg: ':x' };
+    assert.notEqual(ffixer(input, {}), input);
+  });
+
+  it('still accepts the deprecated positional form and warns', () => {
+    const warnings = [];
+    const original = console.warn;
+    console.warn = (...args) => warnings.push(args.join(' '));
+    try {
+      const input = { msg: 'Hello :name' };
+      const out = ffixer(input, false, false);
+      assert.equal(out, input);
+      assert.ok(warnings.some((w) => w.includes('deprecated')));
+    } finally {
+      console.warn = original;
+    }
   });
 });

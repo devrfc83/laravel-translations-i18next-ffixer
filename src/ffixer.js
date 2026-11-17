@@ -132,7 +132,21 @@ const processValue = (value, clone, ancestors = new Set()) => {
   }
 };
 
-const ffixer = (translations, debug = false, clone = true) => {
+// Accepts ffixer(t, { debug, clone }) and the deprecated ffixer(t, debug, clone).
+const normaliseOptions = (arg2, arg3) => {
+  if (typeof arg2 === 'boolean' || typeof arg3 === 'boolean') {
+    console.warn(
+      'ffixer: positional (debug, clone) arguments are deprecated; ' +
+        'pass { debug, clone } instead'
+    );
+    return { debug: arg2 ?? false, clone: arg3 ?? true };
+  }
+  return { debug: false, clone: true, ...arg2 };
+};
+
+const ffixer = (translations, arg2, arg3) => {
+  const { debug, clone } = normaliseOptions(arg2, arg3);
+
   if (debug) {
     console.warn('ffixer started at ' + Date.now().toString());
   }
