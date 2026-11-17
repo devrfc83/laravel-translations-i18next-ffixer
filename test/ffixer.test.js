@@ -223,3 +223,16 @@ describe('ffixer — modo debug', () => {
     }
   });
 });
+
+describe('ffixer — placeholder name boundaries (#1)', () => {
+  it('does not capture a trailing full stop', () => {
+    assert.equal(ffixer({ m: 'At least :min.' }).m, 'At least {{ min }}.');
+  });
+
+  it('handles two placeholders joined by a hyphen', () => {
+    assert.equal(
+      ffixer({ m: 'Between :min-:max chars' }).m,
+      'Between {{ min }}-{{ max }} chars'
+    );
+  });
+});

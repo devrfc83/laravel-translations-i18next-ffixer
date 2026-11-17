@@ -31,7 +31,7 @@
  */
 
 // Matches Laravel placeholders (:attribute, :user-name). Skips ":30" in "10:30".
-const LARAVEL_PLACEHOLDER = /(?<![:\d]):([a-zA-Z_][\w.-]*)/g;
+const LARAVEL_PLACEHOLDER = /(?<![:\d]):([a-zA-Z_]\w*(?:[.-]\w+)*)/g;
 
 const fixString = (value) =>
   value.replace(LARAVEL_PLACEHOLDER, (_, name) => `{{ ${name} }}`);
