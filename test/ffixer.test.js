@@ -236,3 +236,15 @@ describe('ffixer — placeholder name boundaries (#1)', () => {
     );
   });
 });
+
+describe('ffixer — colon attached to text (#2)', () => {
+  for (const s of ['mailto:foo@bar.com', 'Note:important', 'ratio a:b']) {
+    it(`leaves "${s}" untouched`, () => {
+      assert.equal(ffixer({ s }).s, s);
+    });
+  }
+
+  it('still converts a placeholder after an opening parenthesis', () => {
+    assert.equal(ffixer({ s: '(:count)' }).s, '({{ count }})');
+  });
+});
