@@ -8,6 +8,13 @@
     "url": "https://www.github.com/devrfc83/laravel-translations-i18next-ffixer.git"
   },
   "main": "./src/ffixer.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./src/ffixer.js"
+    }
+  },
   "keywords": [
     "i18next",
     "translation",
@@ -20,6 +27,10 @@
   },
   "homepage": "https://github.com/devrfc83/laravel-translations-i18next-ffixer#readme",
   "scripts": {
-    "test": "node --test test/**/*.test.js"
+    "test": "node --test test/**/*.test.js",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
   }
 }
