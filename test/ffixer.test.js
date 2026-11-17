@@ -405,3 +405,57 @@ describe('ffixer — named exports (#8)', () => {
     assert.equal(fixString('no placeholders'), 'no placeholders');
   });
 });
+
+describe('ffixer — plural strings (#11)', () => {
+  it('leaves pipes untouched by default', () => {
+    const out = ffixer({ apples: 'There is one apple|There are many apples' });
+    assert.equal(out.apples, 'There is one apple|There are many apples');
+  });
+
+  it('splits the simple "one|other" form into _one and _other', () => {
+    const out = ffixer(
+      { apples: 'There is one apple|There are :count apples' },
+      { plurals: true }
+    );
+    assert.deepEqual(out, {
+      apples_one: 'There is one apple',
+      apples_other: 'There are {{ count }} apples',
+    });
+  });
+
+  it('maps explicit {0}, {1} and [2,*] segments to _zero, _one and _other', () => {
+    const out = ffixer(
+      { minutes: '{0} None|{1} One minute|[2,*] :count minutes' },
+      { plurals: true }
+    );
+    assert.deepEqual(out, {
+      minutes_zero: 'None',
+      minutes_one: 'One minute',
+      minutes_other: '{{ count }} minutes',
+    });
+  });
+
+  it('leaves strings with unmappable ranges unchanged', () => {
+    const input = '{0} None|[2,5] A few|[6,*] Many';
+    assert.equal(ffixer({ m: input }, { plurals: true }).m, input);
+  });
+
+  it('leaves three-form simple strings unchanged', () => {
+    const input = 'one|few|many';
+    assert.equal(ffixer({ m: input }, { plurals: true }).m, input);
+  });
+
+  it('keeps the other keys in place', () => {
+    const out = ffixer(
+      { a: 'x', n: 'one|:count others', b: 'y' },
+      { plurals: true }
+    );
+    assert.deepEqual(Object.keys(out), ['a', 'n_one', 'n_other', 'b']);
+  });
+
+  it('splits plurals in place with clone: false', () => {
+    const input = { n: 'one|many' };
+    ffixer(input, { clone: false, plurals: true });
+    assert.deepEqual(input, { n_one: 'one', n_other: 'many' });
+  });
+});

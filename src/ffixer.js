@@ -36,6 +36,7 @@ const DEFAULT_OPTIONS = {
   spacing: true,
   prefix: '{{',
   suffix: '}}',
+  plurals: false,
 };
 
 const resolveOptions = (raw) => {
@@ -103,6 +104,45 @@ export const registerFormatters = (i18n) => {
   });
 };
 
+// Laravel explicit plural segments: "{0}", "{1}" or "[2,*]" (ranges like [2,5] are not mapped).
+const EXPLICIT_SEGMENT = /^\s*(?:\{(\d+)\}|\[(\d+),(\d+|\*)\])\s*/;
+
+// Returns { one, other } or { zero?, one, other } for a Laravel plural string,
+// or null when the string cannot be mapped to i18next plural categories.
+const splitPlural = (value) => {
+  const parts = value.split('|');
+  if (parts.length < 2) return null;
+
+  const segments = parts.map((part) => part.match(EXPLICIT_SEGMENT));
+
+  // Simple form: "one apple|many apples".
+  if (segments.every((m) => m === null)) {
+    if (parts.length !== 2) return null;
+    return { one: parts[0].trim(), other: parts[1].trim() };
+  }
+
+  // Explicit form: every segment must carry a marker.
+  if (segments.some((m) => m === null)) return null;
+
+  const forms = {};
+  segments.forEach((match, i) => {
+    const text = parts[i].slice(match[0].length).trim();
+    if (match[1] !== undefined) {
+      const count = Number(match[1]);
+      if (count === 0) forms.zero = text;
+      else if (count === 1) forms.one = text;
+      else forms.invalid = true;
+    } else if (match[3] === '*' && Number(match[2]) <= 2) {
+      forms.other = text;
+    } else {
+      forms.invalid = true;
+    }
+  });
+
+  if (forms.invalid || forms.other === undefined) return null;
+  return forms;
+};
+
 const isTraversable = (value) =>
   value !== null &&
   typeof value === 'object' &&
@@ -116,6 +156,21 @@ const setOwn = (target, key, value) =>
     writable: true,
     configurable: true,
   });
+
+// Usually one [key, value] pair. With "plurals" enabled, a Laravel plural
+// string becomes sibling keys such as "key_one" and "key_other".
+const entriesFor = (key, value, opts, ancestors) => {
+  if (opts.plurals && typeof value === 'string') {
+    const forms = splitPlural(value);
+    if (forms) {
+      return Object.entries(forms).map(([category, text]) => [
+        `${key}_${category}`,
+        convertString(text, opts),
+      ]);
+    }
+  }
+  return [[key, processValue(value, opts, ancestors)]];
+};
 
 // "ancestors" holds the containers currently being visited, so a reference
 // back to one of them is reported instead of recursing until the stack overflows.
@@ -155,13 +210,21 @@ const processValue = (value, opts, ancestors = new Set()) => {
       for (const key of Object.keys(value)) {
         // Define the key as an own property: a plain assignment would call the
         // __proto__ setter for a key named "__proto__" (e.g. from JSON.parse).
-        setOwn(result, key, processValue(value[key], opts, ancestors));
+        for (const [k, v] of entriesFor(key, value[key], opts, ancestors)) {
+          setOwn(result, k, v);
+        }
       }
       return result;
     }
 
     for (const key of Object.keys(value)) {
-      value[key] = processValue(value[key], opts, ancestors);
+      const entries = entriesFor(key, value[key], opts, ancestors);
+      if (entries.length === 1 && entries[0][0] === key) {
+        value[key] = entries[0][1];
+      } else {
+        delete value[key];
+        for (const [k, v] of entries) value[k] = v;
+      }
     }
     return value;
   } finally {
@@ -193,6 +256,7 @@ const normaliseArguments = (arg2, arg3) => {
  * @param {boolean} [options.spacing=true] - Write "{{ name }}" (true) or "{{name}}" (false).
  * @param {string} [options.prefix='{{'] - Opening delimiter.
  * @param {string} [options.suffix='}}'] - Closing delimiter.
+ * @param {boolean} [options.plurals=false] - Split Laravel plural strings ("one|many", "{0} …|[1,*] …") into _zero/_one/_other keys.
  * @returns {unknown} Fixed translations, or the input unchanged when it is not an object.
  */
 export const ffixer = (translations, arg2, arg3) => {
