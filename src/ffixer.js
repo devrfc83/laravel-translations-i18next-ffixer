@@ -25,8 +25,10 @@
  * The result of this function can be consumed by i18next.
  */
 
-// Matches Laravel placeholders (:attribute, :user-name). Skips ":30" in "10:30".
-const LARAVEL_PLACEHOLDER = /(?<![\w:{]):([a-zA-Z_]\w*(?:[.-]\w+)*)/g;
+// Matches Laravel placeholders (:attribute, :user-name). Skips ":30" in "10:30",
+// "mailto:x", "Note:x" and "{{:x}}". The character before the colon is captured
+// instead of using a lookbehind, which Safari before 16.4 cannot parse.
+const LARAVEL_PLACEHOLDER = /(^|[^\w:{]):([a-zA-Z_]\w*(?:[.-]\w+)*)/g;
 
 const DEFAULT_OPTIONS = {
   clone: true,
@@ -72,11 +74,11 @@ const isSelected = (name, set) => set.has(name) || set.has(name.toLowerCase());
 const convertString = (value, opts) => {
   const { stats } = opts;
   if (stats) stats.strings++;
-  return value.replace(LARAVEL_PLACEHOLDER, (match, name) => {
+  return value.replace(LARAVEL_PLACEHOLDER, (match, before, name) => {
     if (opts.only && !isSelected(name, opts.only)) return match;
     if (opts.except && isSelected(name, opts.except)) return match;
     if (stats) stats.placeholders++;
-    return toPlaceholder(name, opts);
+    return before + toPlaceholder(name, opts);
   });
 };
 

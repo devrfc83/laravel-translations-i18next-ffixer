@@ -459,3 +459,21 @@ describe('ffixer — plural strings (#11)', () => {
     assert.deepEqual(input, { n_one: 'one', n_other: 'many' });
   });
 });
+
+describe('ffixer — no lookbehind in the pattern (#15)', () => {
+  it('converts a placeholder at the very start of a string', () => {
+    assert.equal(ffixer({ m: ':a is first' }).m, '{{ a }} is first');
+  });
+
+  it('converts placeholders after brackets and punctuation', () => {
+    assert.equal(ffixer({ m: '[:a], (:b), "c":d' }).m, '[{{ a }}], ({{ b }}), "c"{{ d }}');
+  });
+
+  it('converts adjacent placeholders separated by a space', () => {
+    assert.equal(ffixer({ m: ':a :b' }).m, '{{ a }} {{ b }}');
+  });
+
+  it('keeps the second of two directly joined placeholders unchanged', () => {
+    assert.equal(ffixer({ m: ':a:b' }).m, '{{ a }}:b');
+  });
+});
