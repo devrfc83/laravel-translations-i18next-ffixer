@@ -25,11 +25,11 @@ When using Laravel in the backend and React in the frontend with Vite, there is
 a package named [vite-plugin-laravel-translations](https://www.npmjs.com/package/vite-plugin-laravel-translations)
 that exposes Laravel i18n strings configured in the **lang/** directory. This
 package makes translation strings available as a global variable on the client
-side, named **window.LARAVEL_TRANSLATIONS**. This way you can maintain all your
-translations in PHP format and avoid duplicating work.
+side, exposed by Vite as **import.meta.env.VITE_LARAVEL_TRANSLATIONS**. This way
+you can maintain all your translations in PHP format and avoid duplicating work.
 
-Since this global variable is a nested object that contains a copy of the
-content in the **lang/** directory, it can be loaded directly into
+Since this object is a nested structure that contains a copy of the content in
+the **lang/** directory, it can be loaded directly into
 [react-i18next](https://react.i18next.com/) as the resource. It works, but
 there is an issue: Laravel translation strings prefix placeholders with a colon
 (`:`), while i18next encloses them in double curly brackets (`{{ }}`).
@@ -39,7 +39,7 @@ for placeholders, but there is no documented way to support the format Laravel
 uses for translation strings.
 
 This package contains a small function that takes an object with the structure
-used in **window.LARAVEL_TRANSLATIONS** and replaces colon-prefixed placeholders
+used in **import.meta.env.VITE_LARAVEL_TRANSLATIONS** and replaces colon-prefixed placeholders
 with double curly bracketed ones. Nested objects and arrays are walked
 recursively, and the replacement applies only to string values.
 
@@ -73,7 +73,7 @@ i18n
     interpolation: {
       escapeValue: false,
     },
-    resources: window.LARAVEL_TRANSLATIONS,
+    resources: import.meta.env.VITE_LARAVEL_TRANSLATIONS,
   });
 
 export default i18n;
@@ -88,7 +88,7 @@ import ffixer from 'laravel-translations-i18next-ffixer';
 interpolation: {
   escapeValue: false,
 },
-resources: ffixer(window.LARAVEL_TRANSLATIONS),
+resources: ffixer(import.meta.env.VITE_LARAVEL_TRANSLATIONS),
 // ...
 ```
 
@@ -97,7 +97,7 @@ resources: ffixer(window.LARAVEL_TRANSLATIONS),
 Options are passed as the second argument:
 
 ```js
-ffixer(window.LARAVEL_TRANSLATIONS, { clone: false, debug: true });
+ffixer(import.meta.env.VITE_LARAVEL_TRANSLATIONS, { clone: false, debug: true });
 ```
 
 | Option | Type | Default | Description |
@@ -230,10 +230,10 @@ application's loading time.
 
 ```js
 // before
-ffixer(window.LARAVEL_TRANSLATIONS, false, false);
+ffixer(import.meta.env.VITE_LARAVEL_TRANSLATIONS, false, false);
 
 // now
-ffixer(window.LARAVEL_TRANSLATIONS, { clone: false });
+ffixer(import.meta.env.VITE_LARAVEL_TRANSLATIONS, { clone: false });
 ```
 
 - Deep imports such as `laravel-translations-i18next-ffixer/src/ffixer.js` are
@@ -261,9 +261,19 @@ Because it aims to **fix** the issue with the **suffix** parameter in i18next.
 
 ## Is there a better way?
 
-I don't know. I'll keep researching and probably ping the maintainers of the
-vite-plugin-laravel-translations package and the i18next library about this
-issue.
+I don't know. The original
+[vite-plugin-laravel-translations](https://github.com/dcodegroup/vite-plugin-laravel-translations)
+has had no commits since May 2025, so I'd rather not depend on a change there.
+The issue is also worth raising with the i18next maintainers.
+
+## Vite compatibility
+
+The original `vite-plugin-laravel-translations` (0.3.1) declares a peer
+dependency on Vite 6 or earlier. Projects on Vite 8 can use the community fork
+[`@sydgren/vite-plugin-laravel-translations`](https://www.npmjs.com/package/@sydgren/vite-plugin-laravel-translations),
+which requires Vite 8 and Node.js 24 or later. This package works with either
+plugin, since both expose the translations through `import.meta.env`. I have
+not reviewed the fork's source beyond its published files.
 
 ## Who is the author?
 

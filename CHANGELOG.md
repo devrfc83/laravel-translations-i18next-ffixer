@@ -4,6 +4,20 @@ All notable changes to this project are documented in this file. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-11-17
+
+### Fixed
+
+- The README showed `window.LARAVEL_TRANSLATIONS` as the source of the
+  translations. The plugin exposes them as `import.meta.env.VITE_LARAVEL_TRANSLATIONS`,
+  and the examples now use that name.
+
+### Documentation
+
+- The README notes that Vite 8 projects need the community fork
+  `@sydgren/vite-plugin-laravel-translations`, since the original plugin
+  declares a peer dependency on Vite 6 or earlier.
+
 ## [0.1.1] - 2026-11-17
 
 ### Changed
