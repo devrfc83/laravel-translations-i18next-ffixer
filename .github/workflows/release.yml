@@ -20,10 +20,10 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
           cache: npm
+      # Trusted publishing needs npm 11.5.1 or later; Node 22 ships an older npm.
+      - run: npm install -g npm@^11.5.1
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
