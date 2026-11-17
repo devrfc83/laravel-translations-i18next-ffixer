@@ -286,3 +286,34 @@ describe('ffixer — __proto__ keys in clone mode (#4)', () => {
     assert.equal(out.k, '{{ b }}');
   });
 });
+
+describe('ffixer — edge cases (#5)', () => {
+  it('leaves a placeholder already wrapped in braces untouched', () => {
+    assert.equal(ffixer({ m: '{{:name}}' }).m, '{{:name}}');
+  });
+
+  it('throws a descriptive TypeError on a cyclic reference', () => {
+    const t = { a: ':x' };
+    t.self = t;
+    assert.throws(() => ffixer(t), TypeError);
+    assert.throws(() => ffixer(t), /cyclic reference/);
+  });
+
+  it('accepts the same object referenced twice (not a cycle)', () => {
+    const shared = { a: ':x' };
+    const out = ffixer({ first: shared, second: shared });
+    assert.equal(out.first.a, '{{ x }}');
+    assert.equal(out.second.a, '{{ x }}');
+  });
+
+  it('throws a helpful TypeError for a frozen object with clone=false', () => {
+    assert.throws(
+      () => ffixer(Object.freeze({ a: ':x' }), false, false),
+      /frozen object in place; pass clone: true/
+    );
+  });
+
+  it('still works on a frozen object with the default clone', () => {
+    assert.equal(ffixer(Object.freeze({ a: ':x' })).a, '{{ x }}');
+  });
+});

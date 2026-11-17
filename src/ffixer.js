@@ -35,7 +35,7 @@
  */
 
 // Matches Laravel placeholders (:attribute, :user-name). Skips ":30" in "10:30".
-const LARAVEL_PLACEHOLDER = /(?<![\w:]):([a-zA-Z_]\w*(?:[.-]\w+)*)/g;
+const LARAVEL_PLACEHOLDER = /(?<![\w:{]):([a-zA-Z_]\w*(?:[.-]\w+)*)/g;
 
 // Laravel replaces ":Name" with the ucfirst value and ":NAME" with the upper
 // case value. i18next has no such variants, so they become formatters.
@@ -72,7 +72,17 @@ const isTraversable = (value) =>
   (Array.isArray(value) ||
     Object.prototype.toString.call(value) === '[object Object]');
 
-const processValue = (value, clone) => {
+const setOwn = (target, key, value) =>
+  Object.defineProperty(target, key, {
+    value,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
+
+// "ancestors" holds the containers currently being visited, so a reference
+// back to one of them is reported instead of recursing until the stack overflows.
+const processValue = (value, clone, ancestors = new Set()) => {
   if (typeof value === 'string') {
     return fixString(value);
   }
@@ -81,35 +91,45 @@ const processValue = (value, clone) => {
     return value;
   }
 
-  if (Array.isArray(value)) {
-    if (clone) {
-      return value.map((item) => processValue(item, clone));
+  if (ancestors.has(value)) {
+    throw new TypeError('ffixer: cyclic reference in translations');
+  }
+
+  if (!clone && Object.isFrozen(value)) {
+    throw new TypeError(
+      'ffixer: cannot modify a frozen object in place; pass clone: true'
+    );
+  }
+
+  ancestors.add(value);
+  try {
+    if (Array.isArray(value)) {
+      if (clone) {
+        return value.map((item) => processValue(item, clone, ancestors));
+      }
+      for (let i = 0; i < value.length; i++) {
+        value[i] = processValue(value[i], clone, ancestors);
+      }
+      return value;
     }
-    for (let i = 0; i < value.length; i++) {
-      value[i] = processValue(value[i], clone);
+
+    if (clone) {
+      const result = {};
+      for (const key of Object.keys(value)) {
+        // Define the key as an own property: a plain assignment would call the
+        // __proto__ setter for a key named "__proto__" (e.g. from JSON.parse).
+        setOwn(result, key, processValue(value[key], clone, ancestors));
+      }
+      return result;
+    }
+
+    for (const key of Object.keys(value)) {
+      value[key] = processValue(value[key], clone, ancestors);
     }
     return value;
+  } finally {
+    ancestors.delete(value);
   }
-
-  if (clone) {
-    const result = {};
-    for (const key of Object.keys(value)) {
-      // Define the key as an own property: a plain assignment would call the
-      // __proto__ setter for a key named "__proto__" (e.g. from JSON.parse).
-      Object.defineProperty(result, key, {
-        value: processValue(value[key], clone),
-        enumerable: true,
-        writable: true,
-        configurable: true,
-      });
-    }
-    return result;
-  }
-
-  for (const key of Object.keys(value)) {
-    value[key] = processValue(value[key], clone);
-  }
-  return value;
 };
 
 const ffixer = (translations, debug = false, clone = true) => {
