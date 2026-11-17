@@ -83,12 +83,22 @@ const toPlaceholder = (name, opts) => {
 // A name is selected when it matches as written or in lower case.
 const isSelected = (name, set) => set.has(name) || set.has(name.toLowerCase());
 
-const fixString = (value, opts) =>
+const convertString = (value, opts) =>
   value.replace(LARAVEL_PLACEHOLDER, (match, name) => {
     if (opts.only && !isSelected(name, opts.only)) return match;
     if (opts.except && isSelected(name, opts.except)) return match;
     return toPlaceholder(name, opts);
   });
+
+/**
+ * Convert the placeholders in a single string.
+ *
+ * @param {string} value - A translation string, e.g. 'Hello :name'.
+ * @param {object} [options] - The same options accepted by ffixer.
+ * @returns {string} The string with i18next placeholders.
+ */
+export const fixString = (value, options) =>
+  convertString(value, resolveOptions(options));
 
 /**
  * Register the "capitalize" and "uppercase" formatters used by ":Name" and
@@ -122,7 +132,7 @@ const setOwn = (target, key, value) =>
 // back to one of them is reported instead of recursing until the stack overflows.
 const processValue = (value, opts, ancestors = new Set()) => {
   if (typeof value === 'string') {
-    return fixString(value, opts);
+    return convertString(value, opts);
   }
 
   if (!isTraversable(value)) {
@@ -182,7 +192,7 @@ const normaliseArguments = (arg2, arg3) => {
   return arg2;
 };
 
-const ffixer = (translations, arg2, arg3) => {
+export const ffixer = (translations, arg2, arg3) => {
   const opts = resolveOptions(normaliseArguments(arg2, arg3));
   const { debug } = opts;
 

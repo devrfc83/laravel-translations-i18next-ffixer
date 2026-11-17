@@ -389,3 +389,17 @@ describe('ffixer — only / except / spacing / prefix / suffix (#7)', () => {
 it('accepts null as the options argument', () => {
   assert.equal(ffixer({ m: ':a' }, null).m, '{{ a }}');
 });
+
+describe('ffixer — named exports (#8)', () => {
+  it('exports ffixer as a named export', async () => {
+    const mod = await import('../src/ffixer.js');
+    assert.equal(mod.ffixer, mod.default);
+  });
+
+  it('converts a single string with fixString', async () => {
+    const { fixString } = await import('../src/ffixer.js');
+    assert.equal(fixString('Hello :name'), 'Hello {{ name }}');
+    assert.equal(fixString('Hi :name', { spacing: false }), 'Hi {{name}}');
+    assert.equal(fixString('no placeholders'), 'no placeholders');
+  });
+});
