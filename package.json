@@ -33,9 +33,13 @@
   ],
   "scripts": {
     "test": "node --test test/**/*.test.js",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint ."
   },
   "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "globals": "17.14.0",
     "typescript": "5.9.3"
   },
   "sideEffects": false,
