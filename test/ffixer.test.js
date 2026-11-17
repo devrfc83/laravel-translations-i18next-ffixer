@@ -193,34 +193,36 @@ describe('ffixer — idempotencia y regresiones', () => {
 });
 
 describe('ffixer — modo debug', () => {
-  it('registra inicio y fin en consola cuando debug es true', () => {
-    const warnings = [];
-    const original = console.warn;
-    console.warn = (...args) => warnings.push(args.join(' '));
-
+  const capture = (method, fn) => {
+    const messages = [];
+    const original = console[method];
+    console[method] = (...args) => messages.push(args.join(' '));
     try {
-      ffixer({ msg: ':a' }, { debug: true });
-      assert.equal(warnings.length, 2);
-      assert.match(warnings[0], /^ffixer started at \d+$/);
-      assert.match(warnings[1], /^ffixer finished at \d+$/);
+      fn();
     } finally {
-      console.warn = original;
+      console[method] = original;
     }
+    return messages;
+  };
+
+  it('logs one summary line with counts and duration when debug is true', () => {
+    const messages = capture('debug', () => {
+      ffixer({ a: ':x', b: 'no placeholders', c: ':y :z' }, { debug: true });
+    });
+    assert.equal(messages.length, 1);
+    assert.match(
+      messages[0],
+      /^ffixer: 3 placeholders in 3 strings, \d+\.\d{2} ms$/
+    );
   });
 
   it('avisa en debug cuando la entrada no es un objeto', () => {
-    const warnings = [];
-    const original = console.warn;
-    console.warn = (...args) => warnings.push(args.join(' '));
-
-    try {
-      assert.equal(ffixer('not an object', { debug: true }), 'not an object');
-      assert.ok(
-        warnings.some((w) => w.includes('expected object, got string'))
-      );
-    } finally {
-      console.warn = original;
-    }
+    let result;
+    const messages = capture('warn', () => {
+      result = ffixer('not an object', { debug: true });
+    });
+    assert.equal(result, 'not an object');
+    assert.ok(messages.some((w) => w.includes('expected object, got string')));
   });
 });
 

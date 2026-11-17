@@ -31,7 +31,7 @@
  * @param {unknown} translations - Tree of translation strings (e.g. window.LARAVEL_TRANSLATIONS).
  * @param {object} [options]
  * @param {boolean} [options.clone=true] - Return a new tree instead of mutating the input.
- * @param {boolean} [options.debug=false] - Log timing information to the console.
+ * @param {boolean} [options.debug=false] - Log a summary line with counts and duration.
  * @param {string[]} [options.only] - Convert only these placeholder names.
  * @param {string[]} [options.except] - Never convert these placeholder names.
  * @param {boolean} [options.spacing=true] - Write "{{ name }}" (true) or "{{name}}" (false).
@@ -83,12 +83,16 @@ const toPlaceholder = (name, opts) => {
 // A name is selected when it matches as written or in lower case.
 const isSelected = (name, set) => set.has(name) || set.has(name.toLowerCase());
 
-const convertString = (value, opts) =>
-  value.replace(LARAVEL_PLACEHOLDER, (match, name) => {
+const convertString = (value, opts) => {
+  const { stats } = opts;
+  if (stats) stats.strings++;
+  return value.replace(LARAVEL_PLACEHOLDER, (match, name) => {
     if (opts.only && !isSelected(name, opts.only)) return match;
     if (opts.except && isSelected(name, opts.except)) return match;
+    if (stats) stats.placeholders++;
     return toPlaceholder(name, opts);
   });
+};
 
 /**
  * Convert the placeholders in a single string.
@@ -195,9 +199,9 @@ const normaliseArguments = (arg2, arg3) => {
 export const ffixer = (translations, arg2, arg3) => {
   const opts = resolveOptions(normaliseArguments(arg2, arg3));
   const { debug } = opts;
-
+  const start = debug ? performance.now() : 0;
   if (debug) {
-    console.warn('ffixer started at ' + Date.now().toString());
+    opts.stats = { strings: 0, placeholders: 0 };
   }
 
   if (translations === null || translations === undefined) {
@@ -221,7 +225,11 @@ export const ffixer = (translations, arg2, arg3) => {
   const result = processValue(translations, opts);
 
   if (debug) {
-    console.warn('ffixer finished at ' + Date.now().toString());
+    const ms = (performance.now() - start).toFixed(2);
+    const { strings, placeholders } = opts.stats;
+    console.debug(
+      `ffixer: ${placeholders} placeholders in ${strings} strings, ${ms} ms`
+    );
   }
 
   return result;
