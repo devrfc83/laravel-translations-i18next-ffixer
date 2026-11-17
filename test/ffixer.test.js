@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import ffixer from '../src/ffixer.js';
+import ffixer, { registerFormatters } from '../src/ffixer.js';
 
 describe('ffixer — placeholders en strings', () => {
   it('convierte un placeholder Laravel simple', () => {
@@ -246,5 +246,33 @@ describe('ffixer — colon attached to text (#2)', () => {
 
   it('still converts a placeholder after an opening parenthesis', () => {
     assert.equal(ffixer({ s: '(:count)' }).s, '({{ count }})');
+  });
+});
+
+describe('ffixer — case variants :Name and :NAME (#3)', () => {
+  it('maps :Name to a capitalize formatter', () => {
+    assert.equal(ffixer({ m: 'Hello :Name' }).m, 'Hello {{ name, capitalize }}');
+  });
+
+  it('maps :NAME to an uppercase formatter', () => {
+    assert.equal(ffixer({ m: 'Hello :NAME' }).m, 'Hello {{ name, uppercase }}');
+  });
+
+  it('keeps lower-case placeholders unchanged', () => {
+    assert.equal(ffixer({ m: ':name' }).m, '{{ name }}');
+  });
+
+  it('leaves mixed-case names such as :userName as they are', () => {
+    assert.equal(ffixer({ m: ':userName' }).m, '{{ userName }}');
+  });
+
+  it('registers the formatters on an i18next-like instance', () => {
+    const formatters = new Map();
+    const i18n = {
+      services: { formatter: { add: (name, fn) => formatters.set(name, fn) } },
+    };
+    registerFormatters(i18n);
+    assert.equal(formatters.get('uppercase')('abc'), 'ABC');
+    assert.equal(formatters.get('capitalize')('abc'), 'Abc');
   });
 });

@@ -23,6 +23,10 @@
  * only applies to strings.
  *
  * The result of this function can be consumed by i18next.
+ */
+
+/**
+ * Convert Laravel-style placeholders (:name) to i18next ones ({{ name }}).
  *
  * @param {unknown} translations - Tree of translation strings (e.g. window.LARAVEL_TRANSLATIONS).
  * @param {boolean} [debug=false] - Log start/finish timestamps to the console.
@@ -33,8 +37,34 @@
 // Matches Laravel placeholders (:attribute, :user-name). Skips ":30" in "10:30".
 const LARAVEL_PLACEHOLDER = /(?<![\w:]):([a-zA-Z_]\w*(?:[.-]\w+)*)/g;
 
+// Laravel replaces ":Name" with the ucfirst value and ":NAME" with the upper
+// case value. i18next has no such variants, so they become formatters.
+const toPlaceholder = (name) => {
+  const lower = name.toLowerCase();
+  if (name === lower) return `{{ ${name} }}`;
+  if (name === name.toUpperCase()) return `{{ ${lower}, uppercase }}`;
+  if (name[0] === name[0].toUpperCase() && name.slice(1) === lower.slice(1)) {
+    return `{{ ${lower}, capitalize }}`;
+  }
+  return `{{ ${name} }}`;
+};
+
 const fixString = (value) =>
-  value.replace(LARAVEL_PLACEHOLDER, (_, name) => `{{ ${name} }}`);
+  value.replace(LARAVEL_PLACEHOLDER, (_, name) => toPlaceholder(name));
+
+/**
+ * Register the "capitalize" and "uppercase" formatters used by ":Name" and
+ * ":NAME" placeholders. Call it once with the i18next instance.
+ *
+ * @param {{ services: { formatter: { add: Function } } }} i18n - An initialised i18next instance.
+ */
+export const registerFormatters = (i18n) => {
+  i18n.services.formatter.add('uppercase', (value) => String(value).toUpperCase());
+  i18n.services.formatter.add('capitalize', (value) => {
+    const text = String(value);
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  });
+};
 
 const isTraversable = (value) =>
   value !== null &&
