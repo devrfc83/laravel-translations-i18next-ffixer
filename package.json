@@ -13,7 +13,8 @@
     ".": {
       "types": "./index.d.ts",
       "default": "./src/ffixer.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "keywords": [
     "i18next",
@@ -36,5 +37,9 @@
   },
   "devDependencies": {
     "typescript": "5.9.3"
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
   }
 }
