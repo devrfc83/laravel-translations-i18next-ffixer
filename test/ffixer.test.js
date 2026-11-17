@@ -1,14 +1,28 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import ffixer, { registerFormatters } from '../src/ffixer.js';
+import ffixer, { fixString, registerFormatters } from '../src/ffixer.js';
 
-describe('ffixer — placeholders en strings', () => {
-  it('convierte un placeholder Laravel simple', () => {
+// Silences console output from a function while it runs and returns the
+// messages that were logged with the given method.
+const capture = (method, fn) => {
+  const messages = [];
+  const original = console[method];
+  console[method] = (...args) => messages.push(args.join(' '));
+  try {
+    fn();
+  } finally {
+    console[method] = original;
+  }
+  return messages;
+};
+
+describe('placeholders in strings', () => {
+  it('converts a simple Laravel placeholder', () => {
     const input = { msg: 'Hello :name' };
     assert.equal(ffixer(input).msg, 'Hello {{ name }}');
   });
 
-  it('convierte varios placeholders en la misma cadena', () => {
+  it('converts several placeholders in the same string', () => {
     const input = { msg: ':greeting :name, you have :count messages' };
     assert.equal(
       ffixer(input).msg,
@@ -16,12 +30,12 @@ describe('ffixer — placeholders en strings', () => {
     );
   });
 
-  it('soporta guiones en el nombre del placeholder', () => {
+  it('supports hyphens in the placeholder name', () => {
     const input = { msg: 'Hi :user-name' };
     assert.equal(ffixer(input).msg, 'Hi {{ user-name }}');
   });
 
-  it('soporta guiones bajos y mayúsculas (estilo :attribute)', () => {
+  it('supports underscores and upper-case letters (:attribute style)', () => {
     const input = { msg: 'The :attribute field is required.' };
     assert.equal(
       ffixer(input).msg,
@@ -29,39 +43,39 @@ describe('ffixer — placeholders en strings', () => {
     );
   });
 
-  it('soporta puntos en el nombre del placeholder', () => {
+  it('supports dots in the placeholder name', () => {
     const input = { msg: 'See :foo.bar' };
     assert.equal(ffixer(input).msg, 'See {{ foo.bar }}');
   });
 
-  it('deja cadenas sin placeholders intactas', () => {
+  it('leaves strings without placeholders unchanged', () => {
     const input = { msg: 'No placeholders here.' };
     assert.equal(ffixer(input).msg, input.msg);
   });
 
-  it('no modifica texto ya en formato i18next', () => {
+  it('does not modify text already in i18next format', () => {
     const input = { msg: 'Hello {{ name }}' };
     assert.equal(ffixer(input).msg, 'Hello {{ name }}');
   });
 
-  it('no trata :30 en horas como placeholder', () => {
+  it('does not treat the :30 in a time as a placeholder', () => {
     const input = { msg: 'Meeting at 10:30' };
     assert.equal(ffixer(input).msg, 'Meeting at 10:30');
   });
 
-  it('no altera URLs con ://', () => {
+  it('does not alter URLs containing ://', () => {
     const input = { msg: 'Visit https://example.com today' };
     assert.equal(ffixer(input).msg, 'Visit https://example.com today');
   });
 
-  it('no convierte placeholders que empiezan por dígito', () => {
+  it('does not convert placeholders that start with a digit', () => {
     const input = { msg: 'Code :2fa is invalid' };
     assert.equal(ffixer(input).msg, 'Code :2fa is invalid');
   });
 });
 
-describe('ffixer — estructura anidada (i18next / LARAVEL_TRANSLATIONS)', () => {
-  it('recorre objetos anidados como resources de i18next', () => {
+describe('nested structures (i18next / LARAVEL_TRANSLATIONS)', () => {
+  it('walks nested objects like i18next resources', () => {
     const input = {
       en: {
         translation: {
@@ -77,13 +91,13 @@ describe('ffixer — estructura anidada (i18next / LARAVEL_TRANSLATIONS)', () =>
     assert.equal(out.en.translation.nested.bye, 'Bye {{ name }}');
   });
 
-  it('procesa arrays de strings', () => {
+  it('processes arrays of strings', () => {
     const input = { lines: ['Line :n', 'Another :m'] };
     const out = ffixer(input);
     assert.deepEqual(out.lines, ['Line {{ n }}', 'Another {{ m }}']);
   });
 
-  it('ignora valores no string en nodos hoja', () => {
+  it('ignores non-string leaf values', () => {
     const input = {
       count: 42,
       enabled: true,
@@ -95,14 +109,14 @@ describe('ffixer — estructura anidada (i18next / LARAVEL_TRANSLATIONS)', () =>
     assert.equal(out.label, 'Items: {{ count }}');
   });
 
-  it('preserva null en propiedades del objeto', () => {
+  it('preserves null property values', () => {
     const input = { empty: null, text: 'Hi :name' };
     const out = ffixer(input);
     assert.equal(out.empty, null);
     assert.equal(out.text, 'Hi {{ name }}');
   });
 
-  it('no recorre instancias Date', () => {
+  it('does not walk into Date instances', () => {
     const date = new Date('2020-01-01T00:00:00.000Z');
     const input = { createdAt: date, text: 'Hi :name' };
     const out = ffixer(input);
@@ -110,7 +124,7 @@ describe('ffixer — estructura anidada (i18next / LARAVEL_TRANSLATIONS)', () =>
     assert.equal(out.text, 'Hi {{ name }}');
   });
 
-  it('maneja objetos y arrays vacíos', () => {
+  it('handles empty objects and arrays', () => {
     const input = { emptyObj: {}, emptyArr: [], text: ':x' };
     const out = ffixer(input);
     assert.deepEqual(out.emptyObj, {});
@@ -119,8 +133,8 @@ describe('ffixer — estructura anidada (i18next / LARAVEL_TRANSLATIONS)', () =>
   });
 });
 
-describe('ffixer — clone (por defecto) vs mutación in-place', () => {
-  it('por defecto clona y no muta el objeto de entrada', () => {
+describe('clone (default) vs in-place mutation', () => {
+  it('clones by default and leaves the input untouched', () => {
     const input = {
       en: { translation: { greet: 'Hello :name' } },
     };
@@ -130,40 +144,44 @@ describe('ffixer — clone (por defecto) vs mutación in-place', () => {
     assert.equal(out.en.translation.greet, 'Hello {{ name }}');
   });
 
-  it('con clone=false muta in-place y devuelve la misma referencia', () => {
+  it('mutates in place with clone: false and returns the same reference', () => {
     const input = { msg: 'Hello :name' };
-    const out = ffixer(input, false, false);
+    const out = ffixer(input, { clone: false });
     assert.equal(out, input);
     assert.equal(input.msg, 'Hello {{ name }}');
   });
 
-  it('con clone=false muta arrays anidados in-place', () => {
+  it('mutates nested arrays in place with clone: false', () => {
     const input = { lines: ['A :x'] };
-    ffixer(input, false, false);
+    ffixer(input, { clone: false });
     assert.equal(input.lines[0], 'A {{ x }}');
   });
 });
 
-describe('ffixer — entradas no válidas o atípicas', () => {
-  it('devuelve null sin cambios', () => {
+describe('invalid or unusual inputs', () => {
+  it('returns null unchanged', () => {
     assert.equal(ffixer(null), null);
   });
 
-  it('devuelve undefined sin cambios', () => {
+  it('returns undefined unchanged', () => {
     assert.equal(ffixer(undefined), undefined);
   });
 
-  it('devuelve un string primitivo sin cambios', () => {
+  it('returns a primitive string unchanged', () => {
     assert.equal(ffixer('Hello :name'), 'Hello :name');
   });
 
-  it('devuelve un número sin cambios', () => {
+  it('returns a number unchanged', () => {
     assert.equal(ffixer(0), 0);
+  });
+
+  it('accepts null as the options argument', () => {
+    assert.equal(ffixer({ m: ':a' }, null).m, '{{ a }}');
   });
 });
 
-describe('ffixer — idempotencia y regresiones', () => {
-  it('ejecutar dos veces no altera el resultado', () => {
+describe('idempotence and regressions', () => {
+  it('running twice gives the same result', () => {
     const input = { msg: 'Hello :name' };
     const once = ffixer(structuredClone(input));
     const twice = ffixer(structuredClone(once));
@@ -171,7 +189,7 @@ describe('ffixer — idempotencia y regresiones', () => {
     assert.equal(twice.msg, 'Hello {{ name }}');
   });
 
-  it('caso realista tipo mensaje de validación Laravel', () => {
+  it('handles a realistic Laravel validation message set', () => {
     const input = {
       en: {
         validation: {
@@ -192,19 +210,7 @@ describe('ffixer — idempotencia y regresiones', () => {
   });
 });
 
-describe('ffixer — modo debug', () => {
-  const capture = (method, fn) => {
-    const messages = [];
-    const original = console[method];
-    console[method] = (...args) => messages.push(args.join(' '));
-    try {
-      fn();
-    } finally {
-      console[method] = original;
-    }
-    return messages;
-  };
-
+describe('debug mode', () => {
   it('logs one summary line with counts and duration when debug is true', () => {
     const messages = capture('debug', () => {
       ffixer({ a: ':x', b: 'no placeholders', c: ':y :z' }, { debug: true });
@@ -216,7 +222,7 @@ describe('ffixer — modo debug', () => {
     );
   });
 
-  it('avisa en debug cuando la entrada no es un objeto', () => {
+  it('warns in debug mode when the input is not an object', () => {
     let result;
     const messages = capture('warn', () => {
       result = ffixer('not an object', { debug: true });
@@ -226,7 +232,7 @@ describe('ffixer — modo debug', () => {
   });
 });
 
-describe('ffixer — placeholder name boundaries (#1)', () => {
+describe('placeholder name boundaries (#1)', () => {
   it('does not capture a trailing full stop', () => {
     assert.equal(ffixer({ m: 'At least :min.' }).m, 'At least {{ min }}.');
   });
@@ -239,7 +245,7 @@ describe('ffixer — placeholder name boundaries (#1)', () => {
   });
 });
 
-describe('ffixer — colon attached to text (#2)', () => {
+describe('colon attached to text (#2)', () => {
   for (const s of ['mailto:foo@bar.com', 'Note:important', 'ratio a:b']) {
     it(`leaves "${s}" untouched`, () => {
       assert.equal(ffixer({ s }).s, s);
@@ -251,7 +257,7 @@ describe('ffixer — colon attached to text (#2)', () => {
   });
 });
 
-describe('ffixer — case variants :Name and :NAME (#3)', () => {
+describe('case variants :Name and :NAME (#3)', () => {
   it('maps :Name to a capitalize formatter', () => {
     assert.equal(ffixer({ m: 'Hello :Name' }).m, 'Hello {{ name, capitalize }}');
   });
@@ -279,7 +285,7 @@ describe('ffixer — case variants :Name and :NAME (#3)', () => {
   });
 });
 
-describe('ffixer — __proto__ keys in clone mode (#4)', () => {
+describe('__proto__ keys in clone mode (#4)', () => {
   it('keeps a __proto__ key as an own property', () => {
     const input = JSON.parse('{"__proto__":{"x":":a"},"k":":b"}');
     const out = ffixer(input);
@@ -289,7 +295,7 @@ describe('ffixer — __proto__ keys in clone mode (#4)', () => {
   });
 });
 
-describe('ffixer — edge cases (#5)', () => {
+describe('edge cases (#5)', () => {
   it('leaves a placeholder already wrapped in braces untouched', () => {
     assert.equal(ffixer({ m: '{{:name}}' }).m, '{{:name}}');
   });
@@ -308,9 +314,9 @@ describe('ffixer — edge cases (#5)', () => {
     assert.equal(out.second.a, '{{ x }}');
   });
 
-  it('throws a helpful TypeError for a frozen object with clone=false', () => {
+  it('throws a helpful TypeError for a frozen object with clone: false', () => {
     assert.throws(
-      () => ffixer(Object.freeze({ a: ':x' }), false, false),
+      () => ffixer(Object.freeze({ a: ':x' }), { clone: false }),
       /frozen object in place; pass clone: true/
     );
   });
@@ -320,7 +326,7 @@ describe('ffixer — edge cases (#5)', () => {
   });
 });
 
-describe('ffixer — options object (#6)', () => {
+describe('options object and deprecated positional arguments (#6)', () => {
   it('accepts { clone: false } and mutates in place', () => {
     const input = { msg: 'Hello :name' };
     const out = ffixer(input, { clone: false });
@@ -334,21 +340,17 @@ describe('ffixer — options object (#6)', () => {
   });
 
   it('still accepts the deprecated positional form and warns', () => {
-    const warnings = [];
-    const original = console.warn;
-    console.warn = (...args) => warnings.push(args.join(' '));
-    try {
-      const input = { msg: 'Hello :name' };
-      const out = ffixer(input, false, false);
-      assert.equal(out, input);
-      assert.ok(warnings.some((w) => w.includes('deprecated')));
-    } finally {
-      console.warn = original;
-    }
+    const input = { msg: 'Hello :name' };
+    let out;
+    const messages = capture('warn', () => {
+      out = ffixer(input, false, false);
+    });
+    assert.equal(out, input);
+    assert.ok(messages.some((w) => w.includes('deprecated')));
   });
 });
 
-describe('ffixer — only / except / spacing / prefix / suffix (#7)', () => {
+describe('only, except, spacing, prefix and suffix (#7)', () => {
   it('converts only the names listed in "only"', () => {
     const out = ffixer({ m: ':a and :b' }, { only: ['a'] });
     assert.equal(out.m, '{{ a }} and :b');
@@ -388,25 +390,20 @@ describe('ffixer — only / except / spacing / prefix / suffix (#7)', () => {
   });
 });
 
-it('accepts null as the options argument', () => {
-  assert.equal(ffixer({ m: ':a' }, null).m, '{{ a }}');
-});
-
-describe('ffixer — named exports (#8)', () => {
+describe('named exports (#8)', () => {
   it('exports ffixer as a named export', async () => {
     const mod = await import('../src/ffixer.js');
     assert.equal(mod.ffixer, mod.default);
   });
 
-  it('converts a single string with fixString', async () => {
-    const { fixString } = await import('../src/ffixer.js');
+  it('converts a single string with fixString', () => {
     assert.equal(fixString('Hello :name'), 'Hello {{ name }}');
     assert.equal(fixString('Hi :name', { spacing: false }), 'Hi {{name}}');
     assert.equal(fixString('no placeholders'), 'no placeholders');
   });
 });
 
-describe('ffixer — plural strings (#11)', () => {
+describe('plural strings (#11)', () => {
   it('leaves pipes untouched by default', () => {
     const out = ffixer({ apples: 'There is one apple|There are many apples' });
     assert.equal(out.apples, 'There is one apple|There are many apples');
@@ -460,13 +457,16 @@ describe('ffixer — plural strings (#11)', () => {
   });
 });
 
-describe('ffixer — no lookbehind in the pattern (#15)', () => {
+describe('no lookbehind in the pattern (#15)', () => {
   it('converts a placeholder at the very start of a string', () => {
     assert.equal(ffixer({ m: ':a is first' }).m, '{{ a }} is first');
   });
 
   it('converts placeholders after brackets and punctuation', () => {
-    assert.equal(ffixer({ m: '[:a], (:b), "c":d' }).m, '[{{ a }}], ({{ b }}), "c"{{ d }}');
+    assert.equal(
+      ffixer({ m: '[:a], (:b), "c":d' }).m,
+      '[{{ a }}], ({{ b }}), "c"{{ d }}'
+    );
   });
 
   it('converts adjacent placeholders separated by a space', () => {
@@ -476,4 +476,26 @@ describe('ffixer — no lookbehind in the pattern (#15)', () => {
   it('keeps the second of two directly joined placeholders unchanged', () => {
     assert.equal(ffixer({ m: ':a:b' }).m, '{{ a }}:b');
   });
+});
+
+describe('table-driven cases from the open issues', () => {
+  const cases = [
+    ['At least :min.', 'At least {{ min }}.'],
+    ['Between :min-:max', 'Between {{ min }}-{{ max }}'],
+    ['mailto:foo@bar.com', 'mailto:foo@bar.com'],
+    ['Note:important', 'Note:important'],
+    ['(:count)', '({{ count }})'],
+    ['Hello :Name', 'Hello {{ name, capitalize }}'],
+    ['Hello :NAME', 'Hello {{ name, uppercase }}'],
+    ['{{:name}}', '{{:name}}'],
+    ['{0} None|[1,*] :count items', '{0} None|[1,*] {{ count }} items'],
+    ['Meeting at 10:30pm', 'Meeting at 10:30pm'],
+    ['Visit https://example.com', 'Visit https://example.com'],
+  ];
+
+  for (const [input, expected] of cases) {
+    it(`${input} -> ${expected}`, () => {
+      assert.equal(ffixer({ s: input }).s, expected);
+    });
+  }
 });
