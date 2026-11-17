@@ -5,13 +5,27 @@
   "description": "Fix to make translation strings from vite-plugin-laravel-translations compatible with i18next.",
   "repository": {
     "type": "git",
-    "url": "https://www.github.com/devrfc83/laravel-translations-i18next-ffixer.git"
+    "url": "git+https://github.com/devrfc83/laravel-translations-i18next-ffixer.git"
   },
   "main": "./src/ffixer.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./src/ffixer.js"
+    },
+    "./package.json": "./package.json"
+  },
   "keywords": [
     "i18next",
+    "react-i18next",
+    "laravel",
+    "vite",
+    "vite-plugin-laravel-translations",
     "translation",
-    "laravel"
+    "i18n",
+    "interpolation",
+    "placeholder"
   ],
   "author": "Rodrigo Fabián Andrés Fuentealba Cartes",
   "license": "MIT",
@@ -19,7 +33,24 @@
     "url": "https://github.com/devrfc83/laravel-translations-i18next-ffixer/issues"
   },
   "homepage": "https://github.com/devrfc83/laravel-translations-i18next-ffixer#readme",
+  "files": [
+    "src",
+    "index.d.ts"
+  ],
   "scripts": {
-    "test": "node --test test/**/*.test.js"
+    "test": "node --test test/*.test.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "coverage": "node --test --experimental-test-coverage test/*.test.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "globals": "17.14.0",
+    "typescript": "5.9.3"
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
   }
 }
