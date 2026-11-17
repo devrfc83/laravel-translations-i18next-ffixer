@@ -1,4 +1,4 @@
-/**
+/*
  * laravel-translations-i18next-ffixer
  * ===================================
  *
@@ -23,21 +23,6 @@
  * only applies to strings.
  *
  * The result of this function can be consumed by i18next.
- */
-
-/**
- * Convert Laravel-style placeholders (:name) to i18next ones ({{ name }}).
- *
- * @param {unknown} translations - Tree of translation strings (e.g. window.LARAVEL_TRANSLATIONS).
- * @param {object} [options]
- * @param {boolean} [options.clone=true] - Return a new tree instead of mutating the input.
- * @param {boolean} [options.debug=false] - Log a summary line with counts and duration.
- * @param {string[]} [options.only] - Convert only these placeholder names.
- * @param {string[]} [options.except] - Never convert these placeholder names.
- * @param {boolean} [options.spacing=true] - Write "{{ name }}" (true) or "{{name}}" (false).
- * @param {string} [options.prefix='{{'] - Opening delimiter.
- * @param {string} [options.suffix='}}'] - Closing delimiter.
- * @returns {unknown} Fixed translations, or the input unchanged when it is not an object.
  */
 
 // Matches Laravel placeholders (:attribute, :user-name). Skips ":30" in "10:30".
@@ -196,6 +181,20 @@ const normaliseArguments = (arg2, arg3) => {
   return arg2;
 };
 
+/**
+ * Convert Laravel-style placeholders (:name) to i18next ones ({{ name }}).
+ *
+ * @param {unknown} translations - Tree of translation strings (e.g. window.LARAVEL_TRANSLATIONS).
+ * @param {object} [options]
+ * @param {boolean} [options.clone=true] - Return a new tree instead of mutating the input.
+ * @param {boolean} [options.debug=false] - Log a summary line with counts and duration.
+ * @param {string[]} [options.only] - Convert only these placeholder names.
+ * @param {string[]} [options.except] - Never convert these placeholder names.
+ * @param {boolean} [options.spacing=true] - Write "{{ name }}" (true) or "{{name}}" (false).
+ * @param {string} [options.prefix='{{'] - Opening delimiter.
+ * @param {string} [options.suffix='}}'] - Closing delimiter.
+ * @returns {unknown} Fixed translations, or the input unchanged when it is not an object.
+ */
 export const ffixer = (translations, arg2, arg3) => {
   const opts = resolveOptions(normaliseArguments(arg2, arg3));
   const { debug } = opts;
