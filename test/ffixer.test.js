@@ -276,3 +276,13 @@ describe('ffixer — case variants :Name and :NAME (#3)', () => {
     assert.equal(formatters.get('capitalize')('abc'), 'Abc');
   });
 });
+
+describe('ffixer — __proto__ keys in clone mode (#4)', () => {
+  it('keeps a __proto__ key as an own property', () => {
+    const input = JSON.parse('{"__proto__":{"x":":a"},"k":":b"}');
+    const out = ffixer(input);
+    assert.equal(Object.getPrototypeOf(out), Object.prototype);
+    assert.deepEqual(Object.keys(out), ['__proto__', 'k']);
+    assert.equal(out.k, '{{ b }}');
+  });
+});

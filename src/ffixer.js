@@ -94,7 +94,14 @@ const processValue = (value, clone) => {
   if (clone) {
     const result = {};
     for (const key of Object.keys(value)) {
-      result[key] = processValue(value[key], clone);
+      // Define the key as an own property: a plain assignment would call the
+      // __proto__ setter for a key named "__proto__" (e.g. from JSON.parse).
+      Object.defineProperty(result, key, {
+        value: processValue(value[key], clone),
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
     }
     return result;
   }
